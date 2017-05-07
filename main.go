@@ -20,6 +20,9 @@ var (
 	statementID        = statements.Arg("statementID", "statement-YEAR-MONTH e.g. statement-2017-05").String()
 	info               = account.Command("info", "Info")
 	limit              = account.Command("limit", "Limit")
+	stats              = account.Command("stats", "Statistics")
+	status             = account.Command("status", "Status")
+	cards              = n26.Command("cards", "Cards")
 	config             = NewConfig()
 )
 
@@ -112,6 +115,27 @@ func main() {
 		} else {
 			config.Statement(*statementID)
 		}
-
+	case stats.FullCommand():
+		config.Stats()
+	case status.FullCommand():
+		accountStatus := config.Status()
+		fmt.Println(*accountStatus)
+	case cards.FullCommand():
+		cards := config.Cards()
+		data := [][]string{}
+		for _, card := range *cards {
+			data = append(data,
+				[]string{
+					card.ID,
+					card.CardType,
+					card.CardProductType,
+					card.Status,
+					card.UsernameOnCard,
+				})
+		}
+		table.SetHeader([]string{"ID", "Card Type", "Card Product Type", "Status", "Username on card"})
+		table.SetBorder(false) // Set Border to false
+		table.AppendBulk(data) // Add Bulk Data
+		table.Render()
 	}
 }
