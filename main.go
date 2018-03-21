@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -24,13 +25,17 @@ var (
 	status             = account.Command("status", "Status")
 	cards              = n26.Command("cards", "Cards")
 	config             = NewConfig()
+	table              = tablewriter.NewWriter(os.Stdout)
 )
 
 func main() {
-	table := tablewriter.NewWriter(os.Stdout)
 	switch kingpin.MustParse(n26.Parse(os.Args[1:])) {
 	case transactions.FullCommand():
-		transactions := config.Transactions(*transactionsNumber)
+		transactions, err := config.Transactions(*transactionsNumber)
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
 		data := [][]string{}
 		for _, transaction := range *transactions {
 			amount := strconv.FormatFloat(transaction.Amount, 'f', -1, 64)
@@ -38,7 +43,7 @@ func main() {
 				[]string{
 					transaction.PartnerName,
 					fmt.Sprintf("%s %s", amount, transaction.CurrencyCode),
-					transaction.Category})
+					strings.Replace(transaction.Category, "micro-v2-", "", -1)})
 		}
 		table.SetHeader([]string{"Partner Name", "Amount", "Category"})
 		table.SetBorder(false) // Set Border to false
@@ -46,17 +51,25 @@ func main() {
 		table.Render()
 
 	case balance.FullCommand():
-		balance := config.Balance()
+		balance, err := config.Balance()
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
 		available := strconv.FormatFloat(balance.AvailableBalance, 'f', -1, 64)
 		usable := strconv.FormatFloat(balance.UsableBalance, 'f', -1, 64)
 		data := [][]string{[]string{available, usable}}
 		table.SetHeader([]string{"Available Balance", "Usable Balance"})
-		table.SetBorder(false) // Set Border to false
-		table.AppendBulk(data) // Add Bulk Data
+		table.SetBorder(false)
+		table.AppendBulk(data)
 		table.Render()
 
 	case contacts.FullCommand():
-		contacts := config.Contacts()
+		contacts, err := config.Contacts()
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
 		data := [][]string{}
 		for _, contact := range *contacts {
 			data = append(data,
@@ -67,11 +80,15 @@ func main() {
 					contact.Account.AccountType})
 		}
 		table.SetHeader([]string{"Contact Name", "IBAN", "BIC", "Account Type"})
-		table.SetBorder(false) // Set Border to false
-		table.AppendBulk(data) // Add Bulk Data
+		table.SetBorder(false)
+		table.AppendBulk(data)
 		table.Render()
 	case limit.FullCommand():
-		limits := config.AccountLimit()
+		limits, err := config.AccountLimit()
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
 		data := [][]string{}
 		for _, limit := range *limits {
 			amount := strconv.FormatFloat(limit.Amount, 'f', -1, 64)
@@ -81,11 +98,15 @@ func main() {
 					amount})
 		}
 		table.SetHeader([]string{"Limit", "Amount"})
-		table.SetBorder(false) // Set Border to false
-		table.AppendBulk(data) // Add Bulk Data
+		table.SetBorder(false)
+		table.AppendBulk(data)
 		table.Render()
 	case info.FullCommand():
-		accountInfo := config.AccountInfo()
+		accountInfo, err := config.AccountInfo()
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
 		data := [][]string{[]string{accountInfo.ID,
 			accountInfo.FirstName,
 			accountInfo.LastName,
@@ -95,12 +116,16 @@ func main() {
 			accountInfo.Nationality,
 		}}
 		table.SetHeader([]string{"ID", "First Name", "Last Name", "Email", "Mobile", "Gender", "Nationality"})
-		table.SetBorder(false) // Set Border to false
-		table.AppendBulk(data) // Add Bulk Data
+		table.SetBorder(false)
+		table.AppendBulk(data)
 		table.Render()
 	case statements.FullCommand():
 		if len(*statementID) == 0 {
-			bankStatements := config.Statements()
+			bankStatements, err := config.Statements()
+			if err != nil {
+				renderErrorTable(err)
+				return
+			}
 			data := [][]string{}
 			for _, bankStatement := range *bankStatements {
 				data = append(data,
@@ -109,8 +134,8 @@ func main() {
 					})
 			}
 			table.SetHeader([]string{"ID"})
-			table.SetBorder(false) // Set Border to false
-			table.AppendBulk(data) // Add Bulk Data
+			table.SetBorder(false)
+			table.AppendBulk(data)
 			table.Render()
 		} else {
 			config.Statement(*statementID)
@@ -118,10 +143,18 @@ func main() {
 	case stats.FullCommand():
 		config.Stats()
 	case status.FullCommand():
-		accountStatus := config.Status()
+		accountStatus, err := config.Status()
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
 		fmt.Println(*accountStatus)
 	case cards.FullCommand():
-		cards := config.Cards()
+		cards, err := config.Cards()
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
 		data := [][]string{}
 		for _, card := range *cards {
 			data = append(data,
@@ -134,8 +167,16 @@ func main() {
 				})
 		}
 		table.SetHeader([]string{"ID", "Card Type", "Card Product Type", "Status", "Username on card"})
-		table.SetBorder(false) // Set Border to false
-		table.AppendBulk(data) // Add Bulk Data
+		table.SetBorder(false)
+		table.AppendBulk(data)
 		table.Render()
 	}
+}
+
+func renderErrorTable(err error) {
+	errorData := []string{err.Error()}
+	table.SetHeader([]string{"Error"})
+	table.SetBorder(false)  // Set Border to false
+	table.Append(errorData) // Add Bulk Data
+	table.Render()
 }

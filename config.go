@@ -8,7 +8,7 @@ import (
 )
 
 // NewConfig initializes configuration to use N26 API
-func NewConfig() *N26API {
+func NewConfig() *N26Credentials {
 	config := viper.New()
 	config.SetConfigType("yaml")
 	config.SetConfigName("n26")
@@ -18,5 +18,5 @@ func NewConfig() *N26API {
 		fmt.Fprintf(os.Stderr, "Could not read config, %s", err)
 		return nil
 	}
-	return &N26API{config.GetString("username"), config.GetString("password")}
+	return &N26Credentials{config.GetString("username"), config.GetString("password")}
 }

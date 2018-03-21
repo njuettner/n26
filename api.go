@@ -6,11 +6,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const N26APIUrl = "https://api.tech26.de"
 
-type N26TokenStruct struct {
+type N26Error struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+type N26Token struct {
 	AccessToken  string `json:"access_token"`
 	TokenType    string `json:"token_type"`
 	RefreshToken string `json:"refresh_token"`
@@ -153,89 +159,128 @@ type N26Interface interface {
 	Statements() *N26BankStatements
 }
 
-// N26API contains Email and Password to get a Token
-type N26API struct {
+// N26Credentials contains Email and Password to get a Token
+type N26Credentials struct {
 	Email    string
 	Password string
 }
 
 // Contacts returns all customer contacts
-func (api *N26API) Contacts() *N26Contacts {
+func (n26 *N26Credentials) Contacts() (*N26Contacts, error) {
 	contacts := &N26Contacts{}
-	resp, _ := api.call("/api/smrt/contacts", nil)
-	err := json.NewDecoder(resp.Body).Decode(contacts)
+	resp, err := n26.callAPI("/api/smrt/contacts", nil)
 	if err != nil {
-		fmt.Println("Dummy")
+		return nil, err
 	}
-	return contacts
+	err = json.NewDecoder(resp.Body).Decode(contacts)
+	if err != nil {
+		return nil, err
+	}
+	return contacts, nil
 }
 
 // Transactions returns the latest transactions from customers bank account
-func (api *N26API) Transactions(amount string) *N26Transactions {
+func (n26 *N26Credentials) Transactions(amount string) (*N26Transactions, error) {
 	transactions := &N26Transactions{}
 	v := &url.Values{}
 	v.Add("limit", amount)
-	resp, _ := api.call("/api/smrt/transactions", v)
-	err := json.NewDecoder(resp.Body).Decode(transactions)
+	resp, err := n26.callAPI("/api/smrt/transactions", v)
 	if err != nil {
-		fmt.Println("Dummy")
+		return nil, err
 	}
-	return transactions
+	err = checkHttpStatus(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(resp.Body).Decode(transactions)
+	if err != nil {
+		return nil, err
+	}
+	return transactions, nil
 }
 
 // Balance returns customers current balance
-func (api *N26API) Balance() *N26Account {
+func (n26 *N26Credentials) Balance() (*N26Account, error) {
 	account := &N26Account{}
-	resp, _ := api.call("/api/accounts", nil)
-	err := json.NewDecoder(resp.Body).Decode(account)
+	resp, err := n26.callAPI("/api/accounts", nil)
 	if err != nil {
-		fmt.Println("Dummy")
+		return nil, err
 	}
-	return account
+	err = checkHttpStatus(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(resp.Body).Decode(account)
+	if err != nil {
+		return nil, err
+	}
+	return account, nil
 }
 
-func (api *N26API) AccountLimit() *N26AccountLimit {
+func (n26 *N26Credentials) AccountLimit() (*N26AccountLimit, error) {
 	accountLimit := &N26AccountLimit{}
-	resp, _ := api.call("/api/settings/account/limits", nil)
-	err := json.NewDecoder(resp.Body).Decode(accountLimit)
+	resp, err := n26.callAPI("/api/settings/account/limits", nil)
 	if err != nil {
-		fmt.Println("Dummy")
+		return nil, err
 	}
-	return accountLimit
+	err = checkHttpStatus(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(resp.Body).Decode(accountLimit)
+	if err != nil {
+		return nil, err
+	}
+	return accountLimit, nil
 }
 
-func (api *N26API) AccountInfo() *N26AccountInfo {
+func (n26 *N26Credentials) AccountInfo() (*N26AccountInfo, error) {
 	accountInfo := &N26AccountInfo{}
-	resp, err := api.call("/api/me", nil)
+	resp, err := n26.callAPI("/api/me", nil)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
+	}
+	err = checkHttpStatus(resp)
+	if err != nil {
+		return nil, err
 	}
 	err = json.NewDecoder(resp.Body).Decode(accountInfo)
 	if err != nil {
-		fmt.Println("Dummy")
+		return nil, err
 	}
-	return accountInfo
+	return accountInfo, nil
 }
 
-func (api *N26API) Statements() *N26BankStatements {
+func (n26 *N26Credentials) Statements() (*N26BankStatements, error) {
 	bankStatements := &N26BankStatements{}
-	resp, err := api.call("/api/statements", nil)
+	resp, err := n26.callAPI("/api/statements", nil)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
+	}
+	err = checkHttpStatus(resp)
+	if err != nil {
+		return nil, err
 	}
 	err = json.NewDecoder(resp.Body).Decode(bankStatements)
 	if err != nil {
-		fmt.Println("Dummy")
+		return nil, err
 	}
-	return bankStatements
+	return bankStatements, nil
 }
 
-func (api *N26API) Statement(statementID string) {
-	resp, err := api.call("/api/statements/"+statementID, nil)
+func (n26 *N26Credentials) Statement(statementID string) {
+	resp, err := n26.callAPI("/api/statements/"+statementID, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
-	byt, _ := ioutil.ReadAll(resp.Body)
+	err = checkHttpStatus(resp)
+	if err != nil {
+		fmt.Println(err)
+	}
+	byt, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
 	ioutil.WriteFile(
 		fmt.Sprintf("%s.pdf", statementID),
 		byt,
@@ -243,55 +288,70 @@ func (api *N26API) Statement(statementID string) {
 	)
 }
 
-func (api *N26API) Stats() {
+func (n26 *N26Credentials) Stats() {
 	v := &url.Values{}
 	v.Set("type", "acct")
 	v.Add("from", "1451602800")
 	v.Add("to", "1451732400")
 	v.Add("numSlices", "25")
-	resp, err := api.call("/api/accounts/stats/", v)
+	resp, err := n26.callAPI("/api/accounts/stats/", v)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 	}
-	byt, _ := ioutil.ReadAll(resp.Body)
+	err = checkHttpStatus(resp)
+	if err != nil {
+		fmt.Println(err)
+	}
+	byt, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println(string(byt))
 }
 
-func (api *N26API) Cards() *N26Cards {
+func (n26 *N26Credentials) Cards() (*N26Cards, error) {
 	cards := &N26Cards{}
-	resp, err := api.call("/api/v2/cards", nil)
+	resp, err := n26.callAPI("/api/v2/cards", nil)
 	if err != nil {
-		fmt.Println(err.Error())
+		return nil, err
+	}
+	err = checkHttpStatus(resp)
+	if err != nil {
+		return nil, err
 	}
 	err = json.NewDecoder(resp.Body).Decode(cards)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
-	return cards
+	return cards, nil
 }
 
-func (api *N26API) Status() *N26AccountStatus {
+func (n26 *N26Credentials) Status() (*N26AccountStatus, error) {
 	accountStatus := &N26AccountStatus{}
-	resp, err := api.call("/api/me/statuses", nil)
+	resp, err := n26.callAPI("/api/me/statuses", nil)
 	if err != nil {
-		fmt.Println(err.Error())
+		return nil, err
+	}
+	err = checkHttpStatus(resp)
+	if err != nil {
+		return nil, err
 	}
 	err = json.NewDecoder(resp.Body).Decode(accountStatus)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
-	return accountStatus
+	return accountStatus, nil
 }
 
-func (api *N26API) token() string {
-	tk := &N26TokenStruct{}
+func (n26 *N26Credentials) getToken() (*N26Token, error) {
+	tk := &N26Token{}
 	v := url.Values{}
 	v.Set("grant_type", "password")
-	v.Add("username", api.Email)
-	v.Add("password", api.Password)
+	v.Add("username", n26.Email)
+	v.Add("password", n26.Password)
 	req, err := http.NewRequest("GET", N26APIUrl, nil)
 	if err != nil {
-		fmt.Println("Dummy")
+		return nil, err
 	}
 	req.Header.Add("Authorization", "Basic YW5kcm9pZDpzZWNyZXQ=")
 	req.URL.Path = "/oauth/token"
@@ -299,19 +359,26 @@ func (api *N26API) token() string {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 	err = json.NewDecoder(resp.Body).Decode(tk)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
-	return tk.AccessToken
+	return tk, nil
 }
 
-func (api *N26API) call(path string, v *url.Values) (*http.Response, error) {
+func (n26 *N26Credentials) callAPI(path string, v *url.Values) (*http.Response, error) {
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", N26APIUrl, nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.token()))
+	req, err := http.NewRequest("GET", N26APIUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	tk, err := n26.getToken()
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tk.AccessToken))
 	req.URL.Path = path
 	if v != nil {
 		req.URL.RawQuery = v.Encode()
@@ -321,4 +388,17 @@ func (api *N26API) call(path string, v *url.Values) (*http.Response, error) {
 		return nil, err
 	}
 	return resp, nil
+}
+
+func checkHttpStatus(resp *http.Response) error {
+	if resp.StatusCode >= http.StatusBadRequest {
+		n26Error := &N26Error{}
+		err := json.NewDecoder(resp.Body).Decode(n26Error)
+		if err != nil {
+			return err
+		}
+		err = fmt.Errorf("%s", strings.Replace(n26Error.ErrorDescription, ":", "", -1))
+		return err
+	}
+	return nil
 }
