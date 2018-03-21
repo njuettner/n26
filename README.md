@@ -19,12 +19,10 @@ You could either use `go get github.com/njuettner/n26` or just download the bina
 
 ## How to use it
 
-Usage:
-
 ```
 usage: n26 [<flags>] <command> [<args> ...]
 
-A command-line to interact with N26
+A command-line to interact with your N26 bank account
 
 Flags:
   --help  Show context-sensitive help (also try --help-long and --help-man).
@@ -34,30 +32,29 @@ Commands:
     Show help.
 
   transactions [<amount>]
-    N26 Transactions (Number by Default: 5)
+    N26 latest transactions (Number by Default: 5)
 
   balance
-    N26 Balance
+    N26 balance
 
   contacts
-    N26 Contacts
+    N26 contacts
 
   account info
-    Info
+    N26 account information
 
   account limit
-    Limit
+    N26 account limit
 
   account stats
-    Statistics
+    N26 account statistics
 
   account status
-    Status
+    N26 account status
 
   statements [<statementID>]
-    N26 Bank Statements
+    N26 statements, will be saved as PDF files
 
   cards
-    Cards
+    N26 cards
 ```
-
