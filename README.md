@@ -50,3 +50,5 @@ Commands:
   cards
     Cards
 ```
+
+Current Version: v0.1
