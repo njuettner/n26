@@ -1,13 +1,23 @@
 # N26 CLI
 
-Documentation will be improved soon.
+Use your [N26](https://n26.com) account via command-line
 
-Create a YAML in your ~/.config a file n26.yml
+Latest Version: v0.1
+
+## Requirement
+
+You only need to create a YAML file **n26.yml** in your ~/.config directory.
 
 ```
 username: your-email@domain.com
 password: n26-password
 ```
+
+## Installation
+
+You could either use `go get github.com/njuettner/n26` or just download the binary release (Windows/Linux/Mac OS)
+
+## How to use it
 
 Usage:
 
@@ -51,4 +61,3 @@ Commands:
     Cards
 ```
 
-Current Version: v0.1
