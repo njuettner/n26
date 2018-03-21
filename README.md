@@ -15,7 +15,7 @@ password: n26-password
 
 ## Installation
 
-You could either use `go get github.com/njuettner/n26` or just download the binary release (Windows/Linux/Mac OS)
+You could either use `go get github.com/njuettner/n26` or just download the binary release ([Windows](https://github.com/njuettner/n26/releases/download/v0.1/n26_windows_amd64.exe)/[Linux](https://github.com/njuettner/n26/releases/download/v0.1/n26_linux_amd64)/[Mac OS](https://github.com/njuettner/n26/releases/download/v0.1/n26_darwin_amd64))
 
 ## How to use it
 
