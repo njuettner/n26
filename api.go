@@ -416,7 +416,6 @@ func (n26 *N26Credentials) getToken() (*N26Token, error) {
 		return nil, err
 	}
 	err = json.NewDecoder(resp.Body).Decode(tk)
-	fmt.Println(tk.AccessToken)
 	if err != nil {
 		return nil, err
 	}
