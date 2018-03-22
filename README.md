@@ -1,18 +1,18 @@
-# N26 CLI
+# N26 CLI 🚀
 
 Use your [N26](https://n26.com) account via command-line
 
 Latest Version: v0.2
 
-## Features: 
+## Features 🙌
 
-- Get your *latest transactions*
-- See your *balance*
-- See all of your *N26 accounts*
-- Get your *account information*
-- Get your *bank statements via PDF*
-- See your *N26 savings and investment*
-- See your *N26 cards*
+- Get your **latest transactions**
+- See your **balance**
+- See all of your **N26 accounts**
+- Get your **account information**
+- Get your **bank statements via PDF**
+- See your **N26 savings and investment**
+- See your **N26 cards**
 
 ## Requirement
 
@@ -27,7 +27,7 @@ password: n26-password
 
 You could either use `go get github.com/njuettner/n26` or just download the binary release ([Windows](https://github.com/njuettner/n26/releases/download/v0.2/n26_windows_amd64.exe)/[Linux](https://github.com/njuettner/n26/releases/download/v0.2/n26_linux_amd64)/[Mac OS](https://github.com/njuettner/n26/releases/download/v0.2/n26_darwin_amd64))
 
-## How to use it
+## How to use it 🤔
 
 ```bash
 usage: n26 [<flags>] <command> [<args> ...]
