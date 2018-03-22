@@ -18,6 +18,7 @@ var (
 	contacts           = n26.Command("contacts", "N26 contacts")
 	account            = n26.Command("account", "N26 account")
 	statements         = n26.Command("statements", "N26 statements, will be saved as PDF files")
+	savings            = n26.Command("savings", "N26 savings and investments")
 	statementID        = statements.Arg("statementID", "statement-YEAR-MONTH e.g. statement-2017-05").String()
 	info               = account.Command("info", "N26 account information")
 	limit              = account.Command("limit", "N26 account limit")
@@ -116,6 +117,28 @@ func main() {
 			accountInfo.Nationality,
 		}}
 		table.SetHeader([]string{"ID", "First Name", "Last Name", "Email", "Mobile", "Gender", "Nationality"})
+		table.SetBorder(false)
+		table.AppendBulk(data)
+		table.Render()
+	case savings.FullCommand():
+		savings, err := config.Savings()
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
+		data := [][]string{}
+		for _, account := range savings.Accounts {
+			data = append(data,
+				[]string{account.Name,
+					fmt.Sprintf("%.2f", account.Balance),
+					fmt.Sprintf("%.2f", account.TotalDeposit),
+					fmt.Sprintf("%.2f", account.Performance*100),
+					fmt.Sprintf("%.2f", account.Profit),
+					fmt.Sprintf("%.2f", account.MonthlyAmount),
+					account.OptionID,
+					account.Status})
+		}
+		table.SetHeader([]string{"Account Name", "Balance", "Total Deposit", "Performance (%)", "Profit", "Monthly Amount", "Option", "Status"})
 		table.SetBorder(false)
 		table.AppendBulk(data)
 		table.Render()

@@ -61,6 +61,43 @@ type N26Transactions []struct {
 	Confirmed          int64   `json:"confirmed"`
 }
 
+type N26Savings struct {
+	TotalBalance float64 `json:"totalBalance"`
+	CanOpenMore  bool    `json:"canOpenMore"`
+	Accounts     []struct {
+		ID            string  `json:"id"`
+		Name          string  `json:"name"`
+		MonthlyAmount float64 `json:"monthlyAmount"`
+		NextDate      string  `json:"nextDate"`
+		History       []struct {
+			Name             string  `json:"name"`
+			Date             string  `json:"date"`
+			Value            float64 `json:"value"`
+			Profit           float64 `json:"profit"`
+			ProfitPercentage float64 `json:"profitPercentage"`
+		} `json:"history"`
+		Forecasts []struct {
+			Name             string  `json:"name"`
+			Date             string  `json:"date"`
+			Value            float64 `json:"value"`
+			PessimisticValue float64 `json:"pessimisticValue"`
+			OptimisticValue  float64 `json:"optimisticValue"`
+			Profit           float64 `json:"profit"`
+			ProfitPercentage float64 `json:"profitPercentage"`
+		} `json:"forecasts"`
+		RiskDisclaimerURL     string  `json:"riskDisclaimerUrl"`
+		ForecastDisclaimerURL string  `json:"forecastDisclaimerUrl"`
+		OptionID              string  `json:"optionId"`
+		StartingDate          string  `json:"startingDate"`
+		Balance               float64 `json:"balance"`
+		TotalDeposit          float64 `json:"totalDeposit"`
+		Performance           float64 `json:"performance"`
+		Profit                float64 `json:"profit"`
+		Status                string  `json:"status"`
+	} `json:"accounts"`
+	PendingAccounts []interface{} `json:"pendingAccounts"`
+}
+
 type N26Contacts []struct {
 	UserID   string `json:"userId"`
 	ID       string `json:"id"`
@@ -343,6 +380,23 @@ func (n26 *N26Credentials) Status() (*N26AccountStatus, error) {
 	return accountStatus, nil
 }
 
+func (n26 *N26Credentials) Savings() (*N26Savings, error) {
+	savings := &N26Savings{}
+	resp, err := n26.callAPI("/api/hub/savings/accounts", nil)
+	if err != nil {
+		return nil, err
+	}
+	err = checkHttpStatus(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(resp.Body).Decode(savings)
+	if err != nil {
+		return nil, err
+	}
+	return savings, nil
+}
+
 func (n26 *N26Credentials) getToken() (*N26Token, error) {
 	tk := &N26Token{}
 	v := url.Values{}
@@ -362,6 +416,7 @@ func (n26 *N26Credentials) getToken() (*N26Token, error) {
 		return nil, err
 	}
 	err = json.NewDecoder(resp.Body).Decode(tk)
+	fmt.Println(tk.AccessToken)
 	if err != nil {
 		return nil, err
 	}
