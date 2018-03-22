@@ -4,6 +4,16 @@ Use your [N26](https://n26.com) account via command-line
 
 Latest Version: v0.2
 
+## Features: 
+
+- Get your *latest transactions*
+- See your *balance*
+- See all of your *N26 accounts*
+- Get your *account information*
+- Get your *bank statements via PDF*
+- See your *N26 savings and investment*
+- See your *N26 cards*
+
 ## Requirement
 
 You only need to create a YAML file **n26.yml** in your ~/.config directory.
