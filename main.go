@@ -2,16 +2,25 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/howeyc/gopass"
+	"github.com/mitchellh/go-homedir"
 	"github.com/olekukonko/tablewriter"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"gopkg.in/yaml.v2"
+)
+
+const (
+	VERSION = "0.0.3"
 )
 
 var (
 	n26                = kingpin.New("n26", "A command-line to interact with your N26 bank account")
+	initialize         = n26.Command("init", "Setting up the configuration to use N26 CLI")
 	transactions       = n26.Command("transactions", "N26 latest transactions (Number by Default: 5)")
 	transactionsNumber = transactions.Arg("amount", "Number of transactions").Default("5").String()
 	balance            = n26.Command("balance", "N26 balance")
@@ -19,18 +28,46 @@ var (
 	account            = n26.Command("account", "N26 account")
 	statements         = n26.Command("statements", "N26 statements, will be saved as PDF files")
 	savings            = n26.Command("savings", "N26 savings and investments")
-	statementID        = statements.Arg("statementID", "statement-YEAR-MONTH e.g. statement-2017-05").String()
+	statementID        = statements.Arg("statementID", "statement-YEAR-MONTH, e.g. statement-2017-05").String()
 	info               = account.Command("info", "N26 account information")
 	limit              = account.Command("limit", "N26 account limit")
 	stats              = account.Command("stats", "N26 account statistics")
 	status             = account.Command("status", "N26 account status")
 	cards              = n26.Command("cards", "N26 cards")
-	config             = NewConfig()
+	config             = Config()
 	table              = tablewriter.NewWriter(os.Stdout)
+	configFilePath     = "~/.config/n26.yaml"
 )
 
 func main() {
+
+	n26.Version(VERSION).Author("Nick Jüttner")
+
 	switch kingpin.MustParse(n26.Parse(os.Args[1:])) {
+	case initialize.FullCommand():
+		var email string
+		fmt.Print("N26 Email: ")
+		fmt.Scanln(&email)
+		fmt.Print("N26 Password: ")
+		pass, err := gopass.GetPasswdMasked()
+		if err != nil {
+			renderErrorTable(err)
+		}
+		cfg := NewConfig(email, string(pass))
+		data, err := yaml.Marshal(cfg)
+		if err != nil {
+			renderErrorTable(err)
+		}
+		filePath, err := homedir.Expand(configFilePath)
+		if err != nil {
+			renderErrorTable(err)
+		}
+		ioutil.WriteFile(filePath, data, 0700)
+		if err != nil {
+			renderErrorTable(err)
+		}
+		return
+
 	case transactions.FullCommand():
 		transactions, err := config.Transactions(*transactionsNumber)
 		if err != nil {
@@ -47,8 +84,8 @@ func main() {
 					strings.Replace(transaction.Category, "micro-v2-", "", -1)})
 		}
 		table.SetHeader([]string{"Partner Name", "Amount", "Category"})
-		table.SetBorder(false) // Set Border to false
-		table.AppendBulk(data) // Add Bulk Data
+		table.SetBorder(false)
+		table.AppendBulk(data)
 		table.Render()
 
 	case balance.FullCommand():
@@ -84,6 +121,7 @@ func main() {
 		table.SetBorder(false)
 		table.AppendBulk(data)
 		table.Render()
+
 	case limit.FullCommand():
 		limits, err := config.AccountLimit()
 		if err != nil {
@@ -102,6 +140,7 @@ func main() {
 		table.SetBorder(false)
 		table.AppendBulk(data)
 		table.Render()
+
 	case info.FullCommand():
 		accountInfo, err := config.AccountInfo()
 		if err != nil {
@@ -120,6 +159,7 @@ func main() {
 		table.SetBorder(false)
 		table.AppendBulk(data)
 		table.Render()
+
 	case savings.FullCommand():
 		savings, err := config.Savings()
 		if err != nil {
@@ -142,6 +182,7 @@ func main() {
 		table.SetBorder(false)
 		table.AppendBulk(data)
 		table.Render()
+
 	case statements.FullCommand():
 		if len(*statementID) == 0 {
 			bankStatements, err := config.Statements()
@@ -163,8 +204,10 @@ func main() {
 		} else {
 			config.Statement(*statementID)
 		}
+
 	case stats.FullCommand():
 		config.Stats()
+
 	case status.FullCommand():
 		accountStatus, err := config.Status()
 		if err != nil {
@@ -172,6 +215,7 @@ func main() {
 			return
 		}
 		fmt.Println(*accountStatus)
+
 	case cards.FullCommand():
 		cards, err := config.Cards()
 		if err != nil {
@@ -199,7 +243,7 @@ func main() {
 func renderErrorTable(err error) {
 	errorData := []string{err.Error()}
 	table.SetHeader([]string{"Error"})
-	table.SetBorder(false)  // Set Border to false
-	table.Append(errorData) // Add Bulk Data
+	table.SetBorder(false)
+	table.Append(errorData)
 	table.Render()
 }

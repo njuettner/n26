@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"golang.org/x/oauth2"
 )
 
 const N26APIUrl = "https://api.tech26.de"
@@ -198,8 +201,8 @@ type N26Interface interface {
 
 // N26Credentials contains Email and Password to get a Token
 type N26Credentials struct {
-	Email    string
-	Password string
+	Email    string `yaml:"username"`
+	Password string `yaml:"password`
 }
 
 // Contacts returns all customer contacts
@@ -225,7 +228,7 @@ func (n26 *N26Credentials) Transactions(amount string) (*N26Transactions, error)
 	if err != nil {
 		return nil, err
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +246,7 @@ func (n26 *N26Credentials) Balance() (*N26Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +263,7 @@ func (n26 *N26Credentials) AccountLimit() (*N26AccountLimit, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +280,7 @@ func (n26 *N26Credentials) AccountInfo() (*N26AccountInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +297,7 @@ func (n26 *N26Credentials) Statements() (*N26BankStatements, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +313,7 @@ func (n26 *N26Credentials) Statement(statementID string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -335,7 +338,7 @@ func (n26 *N26Credentials) Stats() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -352,7 +355,7 @@ func (n26 *N26Credentials) Cards() (*N26Cards, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +372,7 @@ func (n26 *N26Credentials) Status() (*N26AccountStatus, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -386,7 +389,7 @@ func (n26 *N26Credentials) Savings() (*N26Savings, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = checkHttpStatus(resp)
+	err = checkHTTPStatus(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -397,42 +400,15 @@ func (n26 *N26Credentials) Savings() (*N26Savings, error) {
 	return savings, nil
 }
 
-func (n26 *N26Credentials) getToken() (*N26Token, error) {
-	tk := &N26Token{}
-	v := url.Values{}
-	v.Set("grant_type", "password")
-	v.Add("username", n26.Email)
-	v.Add("password", n26.Password)
-	req, err := http.NewRequest("GET", N26APIUrl, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", "Basic YW5kcm9pZDpzZWNyZXQ=")
-	req.URL.Path = "/oauth/token"
-	req.URL.RawQuery = v.Encode()
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	err = json.NewDecoder(resp.Body).Decode(tk)
-	if err != nil {
-		return nil, err
-	}
-	return tk, nil
-}
-
 func (n26 *N26Credentials) callAPI(path string, v *url.Values) (*http.Response, error) {
-	client := &http.Client{}
+	client, err := n26.newClient()
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest("GET", N26APIUrl, nil)
 	if err != nil {
 		return nil, err
 	}
-	tk, err := n26.getToken()
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tk.AccessToken))
 	req.URL.Path = path
 	if v != nil {
 		req.URL.RawQuery = v.Encode()
@@ -444,7 +420,23 @@ func (n26 *N26Credentials) callAPI(path string, v *url.Values) (*http.Response, 
 	return resp, nil
 }
 
-func checkHttpStatus(resp *http.Response) error {
+func (n26 *N26Credentials) newClient() (*http.Client, error) {
+	ctx := context.Background()
+	conf := oauth2.Config{
+		ClientID:     "android",
+		ClientSecret: "secret",
+		Endpoint: oauth2.Endpoint{
+			TokenURL: N26APIUrl + "/oauth/token",
+		},
+	}
+	tk, err := conf.PasswordCredentialsToken(ctx, n26.Email, n26.Password)
+	if err != nil {
+		return nil, err
+	}
+	return conf.Client(ctx, tk), nil
+}
+
+func checkHTTPStatus(resp *http.Response) error {
 	if resp.StatusCode >= http.StatusBadRequest {
 		n26Error := &N26Error{}
 		err := json.NewDecoder(resp.Body).Decode(n26Error)

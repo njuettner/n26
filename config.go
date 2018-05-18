@@ -7,8 +7,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-// NewConfig initializes configuration to use N26 API
-func NewConfig() *N26Credentials {
+// NewConfig initializes the config file
+func NewConfig(username, password string) *N26Credentials {
+	return &N26Credentials{username, password}
+}
+
+// Config returns configuration from file to use N26 API
+func Config() *N26Credentials {
 	config := viper.New()
 	config.SetConfigType("yaml")
 	config.SetConfigName("n26")
