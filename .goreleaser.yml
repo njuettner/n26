@@ -9,3 +9,12 @@ builds:
       - amd64
 archive:
   format: tar.gz
+brew:
+  github:
+    owner: njuettner
+    name: homebrew-n26
+  folder: Formula
+  homepage:  https://github.com/njuettner/n26
+  description: N26 CLI
+  test: |
+    system "#{bin}/n26 -v"
