@@ -29,7 +29,21 @@ password: n26-password
 
 ## Installation
 
-You could either use `go get github.com/njuettner/n26` or just download the [latest release](https://github.com/njuettner/n26/releases/latest).
+### Mac
+
+```sh
+brew install njuettner/n26/n26
+```
+
+### GitHub Release
+
+[Latest release](https://github.com/njuettner/n26/releases/latest)
+
+### Go
+
+```bash
+go get github.com/njuettner/n26
+```
 
 ## How to use it 🤔
 
