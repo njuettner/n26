@@ -15,9 +15,7 @@ import (
 )
 
 var (
-	version            = "dev"
-	commit             = "none"
-	date               = "unknown"
+	version            = "0.3"
 	n26                = kingpin.New("n26", "A command-line to interact with your N26 bank account")
 	initialize         = n26.Command("init", "Setting up the configuration to use N26 CLI")
 	transactions       = n26.Command("transactions", "N26 latest transactions (Number by Default: 5)")
