@@ -14,11 +14,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	VERSION = "0.0.3"
-)
-
 var (
+	version            = "dev"
+	commit             = "none"
+	date               = "unknown"
 	n26                = kingpin.New("n26", "A command-line to interact with your N26 bank account")
 	initialize         = n26.Command("init", "Setting up the configuration to use N26 CLI")
 	transactions       = n26.Command("transactions", "N26 latest transactions (Number by Default: 5)")
@@ -41,7 +40,7 @@ var (
 
 func main() {
 
-	n26.Version(VERSION).Author("Nick Jüttner")
+	n26.Version(version).Author("Nick Jüttner")
 
 	switch kingpin.MustParse(n26.Parse(os.Args[1:])) {
 	case initialize.FullCommand():
