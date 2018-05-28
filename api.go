@@ -19,14 +19,6 @@ type N26Error struct {
 	ErrorDescription string `json:"error_description"`
 }
 
-type N26Token struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	RefreshToken string `json:"refresh_token"`
-	Expires      int    `json:"expires_in"`
-	Scope        string `json:"scope"`
-}
-
 type N26Account struct {
 	AvailableBalance float64 `json:"availableBalance"`
 	UsableBalance    float64 `json:"usableBalance"`
@@ -167,6 +159,19 @@ type N26Cards []struct {
 	MptsCard                            bool        `json:"mptsCard"`
 }
 
+//N26Card V1 API
+type N26CardV1 struct {
+	MaskedPan                          string `json:"maskedPan"`
+	ExpirationDate                     int64  `json:"expirationDate"`
+	CardType                           string `json:"cardType"`
+	ExceetExpressCardDelivery          bool   `json:"exceetExpressCardDelivery"`
+	ExceetExpressCardDeliveryEmailSent bool   `json:"exceetExpressCardDeliveryEmailSent"`
+	PinDefined                         int64  `json:"pinDefined"`
+	CardActivated                      int64  `json:"cardActivated"`
+	ID                                 string `json:"id"`
+	Status                             string
+}
+
 type N26AccountStatus struct {
 	ID                           string `json:"id"`
 	Created                      int64  `json:"created"`
@@ -191,6 +196,15 @@ type N26AccountStatus struct {
 	FlexAccount                  bool   `json:"flexAccount"`
 }
 
+type N26Categories []N26Category
+
+type N26Category struct {
+	ID            string `json:"id"`
+	Base64Image   string `json:"base64Image"`
+	Name          string `json:"name"`
+	BackgroundURL string `json:"backgroundUrl"`
+}
+
 // N26Interface includes all possible API Calls
 type N26Interface interface {
 	Transactions(amount string) *N26Transactions
@@ -205,10 +219,24 @@ type N26Credentials struct {
 	Password string `yaml:"password`
 }
 
+// Categories returns all available categories
+func (n26 *N26Credentials) Categories() (*N26Categories, error) {
+	categories := &N26Categories{}
+	resp, err := n26.callAPI("GET", "/api/smrt/categories", nil)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(resp.Body).Decode(categories)
+	if err != nil {
+		return nil, err
+	}
+	return categories, nil
+}
+
 // Contacts returns all customer contacts
 func (n26 *N26Credentials) Contacts() (*N26Contacts, error) {
 	contacts := &N26Contacts{}
-	resp, err := n26.callAPI("/api/smrt/contacts", nil)
+	resp, err := n26.callAPI("GET", "/api/smrt/contacts", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +252,7 @@ func (n26 *N26Credentials) Transactions(amount string) (*N26Transactions, error)
 	transactions := &N26Transactions{}
 	v := &url.Values{}
 	v.Add("limit", amount)
-	resp, err := n26.callAPI("/api/smrt/transactions", v)
+	resp, err := n26.callAPI("GET", "/api/smrt/transactions", v)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +270,7 @@ func (n26 *N26Credentials) Transactions(amount string) (*N26Transactions, error)
 // Balance returns customers current balance
 func (n26 *N26Credentials) Balance() (*N26Account, error) {
 	account := &N26Account{}
-	resp, err := n26.callAPI("/api/accounts", nil)
+	resp, err := n26.callAPI("GET", "/api/accounts", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +287,7 @@ func (n26 *N26Credentials) Balance() (*N26Account, error) {
 
 func (n26 *N26Credentials) AccountLimit() (*N26AccountLimit, error) {
 	accountLimit := &N26AccountLimit{}
-	resp, err := n26.callAPI("/api/settings/account/limits", nil)
+	resp, err := n26.callAPI("GET", "/api/settings/account/limits", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +304,7 @@ func (n26 *N26Credentials) AccountLimit() (*N26AccountLimit, error) {
 
 func (n26 *N26Credentials) AccountInfo() (*N26AccountInfo, error) {
 	accountInfo := &N26AccountInfo{}
-	resp, err := n26.callAPI("/api/me", nil)
+	resp, err := n26.callAPI("GET", "/api/me", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +321,7 @@ func (n26 *N26Credentials) AccountInfo() (*N26AccountInfo, error) {
 
 func (n26 *N26Credentials) Statements() (*N26BankStatements, error) {
 	bankStatements := &N26BankStatements{}
-	resp, err := n26.callAPI("/api/statements", nil)
+	resp, err := n26.callAPI("GET", "/api/statements", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +337,7 @@ func (n26 *N26Credentials) Statements() (*N26BankStatements, error) {
 }
 
 func (n26 *N26Credentials) Statement(statementID string) {
-	resp, err := n26.callAPI("/api/statements/"+statementID, nil)
+	resp, err := n26.callAPI("GET", "/api/statements/"+statementID, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -334,7 +362,7 @@ func (n26 *N26Credentials) Stats() {
 	v.Add("from", "1451602800")
 	v.Add("to", "1451732400")
 	v.Add("numSlices", "25")
-	resp, err := n26.callAPI("/api/accounts/stats/", v)
+	resp, err := n26.callAPI("GET", "/api/accounts/stats/", v)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -351,7 +379,7 @@ func (n26 *N26Credentials) Stats() {
 
 func (n26 *N26Credentials) Cards() (*N26Cards, error) {
 	cards := &N26Cards{}
-	resp, err := n26.callAPI("/api/v2/cards", nil)
+	resp, err := n26.callAPI("GET", "/api/v2/cards", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -366,9 +394,48 @@ func (n26 *N26Credentials) Cards() (*N26Cards, error) {
 	return cards, nil
 }
 
+func (n26 *N26Credentials) BlockCard(cardID string) (*N26CardV1, error) {
+	card := &N26CardV1{}
+	card.Status = "DISABLED"
+	resp, err := n26.callAPI("POST",
+		fmt.Sprintf("/api/cards/%s/block", cardID),
+		nil)
+	if err != nil {
+		return nil, err
+	}
+	err = checkHTTPStatus(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(resp.Body).Decode(card)
+	if err != nil {
+		return nil, err
+	}
+	return card, nil
+}
+
+func (n26 *N26Credentials) UnblockCard(cardID string) (*N26CardV1, error) {
+	card := &N26CardV1{}
+	card.Status = "ACTIVE"
+	resp, err := n26.callAPI("POST",
+		fmt.Sprintf("/api/cards/%s/unblock", cardID),
+		nil)
+	if err != nil {
+		return nil, err
+	}
+	err = checkHTTPStatus(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(resp.Body).Decode(card)
+	if err != nil {
+		return nil, err
+	}
+	return card, nil
+}
 func (n26 *N26Credentials) Status() (*N26AccountStatus, error) {
 	accountStatus := &N26AccountStatus{}
-	resp, err := n26.callAPI("/api/me/statuses", nil)
+	resp, err := n26.callAPI("GET", "/api/me/statuses", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +452,7 @@ func (n26 *N26Credentials) Status() (*N26AccountStatus, error) {
 
 func (n26 *N26Credentials) Savings() (*N26Savings, error) {
 	savings := &N26Savings{}
-	resp, err := n26.callAPI("/api/hub/savings/accounts", nil)
+	resp, err := n26.callAPI("GET", "/api/hub/savings/accounts", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -400,12 +467,12 @@ func (n26 *N26Credentials) Savings() (*N26Savings, error) {
 	return savings, nil
 }
 
-func (n26 *N26Credentials) callAPI(path string, v *url.Values) (*http.Response, error) {
+func (n26 *N26Credentials) callAPI(method, path string, v *url.Values) (*http.Response, error) {
 	client, err := n26.newClient()
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", N26APIUrl, nil)
+	req, err := http.NewRequest(method, N26APIUrl, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -19,20 +19,25 @@ var (
 	commit             = "none"
 	date               = "unknown"
 	n26                = kingpin.New("n26", "A command-line to interact with your N26 bank account")
-	initialize         = n26.Command("init", "Setting up the configuration to use N26 CLI")
-	transactions       = n26.Command("transactions", "N26 latest transactions (Number by Default: 5)")
+	initialize         = n26.Command("init", "Setup the configuration to use N26 CLI")
+	categories         = n26.Command("categories", "Show N26 categories")
+	transactions       = n26.Command("transactions", "Show N26 latest transactions (Number by Default: 5)")
 	transactionsNumber = transactions.Arg("amount", "Number of transactions").Default("5").String()
-	balance            = n26.Command("balance", "N26 balance")
-	contacts           = n26.Command("contacts", "N26 contacts")
-	account            = n26.Command("account", "N26 account")
-	statements         = n26.Command("statements", "N26 statements, will be saved as PDF files")
-	savings            = n26.Command("savings", "N26 savings and investments")
+	balance            = n26.Command("balance", "Show N26 balance")
+	contacts           = n26.Command("contacts", "Show N26 contacts")
+	account            = n26.Command("account", "Show N26 account")
+	statements         = n26.Command("statement", "Get N26 statement, will be saved as PDF files")
+	savings            = n26.Command("savings", "Show N26 savings and investments")
 	statementID        = statements.Arg("statementID", "statement-YEAR-MONTH, e.g. statement-2017-05").String()
-	info               = account.Command("info", "N26 account information")
-	limit              = account.Command("limit", "N26 account limit")
-	stats              = account.Command("stats", "N26 account statistics")
-	status             = account.Command("status", "N26 account status")
-	cards              = n26.Command("cards", "N26 cards")
+	info               = account.Command("info", "Show N26 account information")
+	limit              = account.Command("limit", "Show N26 account limit")
+	stats              = account.Command("stats", "Show N26 account statistics")
+	status             = account.Command("status", "Show N26 account status")
+	cards              = n26.Command("cards", "Show N26 cards")
+	blockCard          = n26.Command("block-card", "Block N26 Card")
+	blockCardID        = blockCard.Arg("cardID", "N26 Card ID").String()
+	unblockCard        = n26.Command("unblock-card", "Unblock N26 Card")
+	unblockCardID      = unblockCard.Arg("cardID", "N26 Card ID").String()
 	config             = Config()
 	table              = tablewriter.NewWriter(os.Stdout)
 	configFilePath     = "~/.config/n26.yaml"
@@ -233,6 +238,60 @@ func main() {
 				})
 		}
 		table.SetHeader([]string{"ID", "Card Type", "Card Product Type", "Status", "Username on card"})
+		table.SetBorder(false)
+		table.AppendBulk(data)
+		table.Render()
+
+	case blockCard.FullCommand():
+		card, err := config.BlockCard(*blockCardID)
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
+		data := [][]string{}
+		data = append(data,
+			[]string{
+				card.ID,
+				card.CardType,
+				card.Status,
+			})
+		table.SetHeader([]string{"ID", "Card Type", "Status"})
+		table.SetBorder(false)
+		table.AppendBulk(data)
+		table.Render()
+
+	case unblockCard.FullCommand():
+		card, err := config.UnblockCard(*unblockCardID)
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
+		data := [][]string{}
+		data = append(data,
+			[]string{
+				card.ID,
+				card.CardType,
+				card.Status,
+			})
+		table.SetHeader([]string{"ID", "Card Type", "Status"})
+		table.SetBorder(false)
+		table.AppendBulk(data)
+		table.Render()
+
+	case categories.FullCommand():
+		categories, err := config.Categories()
+		if err != nil {
+			renderErrorTable(err)
+		}
+		data := [][]string{}
+		for _, category := range *categories {
+			data = append(data,
+				[]string{
+					category.ID,
+					category.Name,
+				})
+		}
+		table.SetHeader([]string{"ID", "Category Name"})
 		table.SetBorder(false)
 		table.AppendBulk(data)
 		table.Render()

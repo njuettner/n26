@@ -2,7 +2,7 @@
 
 Use your [N26](https://n26.com) account via command-line
 
-Latest Version: v0.3
+Latest Version: v0.4
 
 ## Features 🙌
 
@@ -13,14 +13,16 @@ Latest Version: v0.3
 - Get your **bank statements via PDF**
 - See your **N26 savings and investment**
 - See your **N26 cards**
+- Block/Unblock your **N26 cards**
+- List all **N26 categories**
 
 ## Requirement
 
-If you never used n26 cli before you can run n26 init to setup the configuration
+If you never used n26 cli just run `n26 init` to setup the configuration
 
 or
 
-you can create the YAML file **n26.yml** in your ~/.config directory by yourself:
+you create a YAML file **n26.yml** in your ~/.config directory:
 
 ```yaml
 username: your-email@domain.com
@@ -35,9 +37,9 @@ password: n26-password
 brew install njuettner/n26/n26
 ```
 
-### GitHub Release
+### Windows/Linux 
 
-[Latest release](https://github.com/njuettner/n26/releases/latest)
+[See latest release](https://github.com/njuettner/n26/releases/latest)
 
 ### Go
 
@@ -75,35 +77,44 @@ Commands:
     Show help.
 
   init
-    Setting up the configuration to use N26 CLI
+    Setup the configuration to use N26 CLI
+
+  categories
+    Show N26 categories
 
   transactions [<amount>]
-    N26 latest transactions (Number by Default: 5)
+    Show N26 latest transactions (Number by Default: 5)
 
   balance
-    N26 balance
+    Show N26 balance
 
   contacts
-    N26 contacts
+    Show N26 contacts
 
   account info
-    N26 account information
+    Show N26 account information
 
   account limit
-    N26 account limit
+    Show N26 account limit
 
   account stats
-    N26 account statistics
+    Show N26 account statistics
 
   account status
-    N26 account status
+    Show N26 account status
 
-  statements [<statementID>]
-    N26 statements, will be saved as PDF files
+  statement [<statementID>]
+    Get N26 statement, will be saved as PDF files
 
   savings
-    N26 savings and investments
+    Show N26 savings and investments
 
   cards
-    N26 cards
+    Show N26 cards
+
+  block-card [<cardID>]
+    Block N26 Card
+
+  unblock-card [<cardID>]
+    Unblock N26 Card
 ```
