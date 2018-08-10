@@ -22,6 +22,7 @@ type N26Error struct {
 type N26Account struct {
 	AvailableBalance float64 `json:"availableBalance"`
 	UsableBalance    float64 `json:"usableBalance"`
+	Currency         string  `json:"currency"`
 	BankBalance      float64 `json:"bankBalance"`
 	Iban             string  `json:"iban"`
 	Bic              string  `json:"bic"`
@@ -106,8 +107,9 @@ type N26Contacts []struct {
 }
 
 type N26AccountLimit []struct {
-	Limit  string  `json:"limit"`
-	Amount float64 `json:"amount"`
+	Limit    string  `json:"limit"`
+	Amount   float64 `json:"amount"`
+	Currency string  `json:"currency"`
 }
 
 type N26AccountInfo struct {
@@ -203,6 +205,27 @@ type N26Category struct {
 	Base64Image   string `json:"base64Image"`
 	Name          string `json:"name"`
 	BackgroundURL string `json:"backgroundUrl"`
+}
+
+type N26Spaces struct {
+	TotalBalance float64 `json:"totalBalance"`
+	Spaces       []struct {
+		ID        string `json:"id"`
+		AccountID string `json:"accountId"`
+		Name      string `json:"name"`
+		ImageURL  string `json:"imageUrl"`
+		Balance   struct {
+			AvailableBalance float64 `json:"availableBalance"`
+			Currency         string  `json:"currency"`
+			OverdraftAmount  float64 `json:"overdraftAmount"`
+		} `json:"balance"`
+		IsPrimary      bool `json:"isPrimary"`
+		IsCardAttached bool `json:"isCardAttached"`
+	} `json:"spaces"`
+	UserFeatures struct {
+		AvailableSpaces int  `json:"availableSpaces"`
+		CanUpgrade      bool `json:"canUpgrade"`
+	} `json:"userFeatures"`
 }
 
 // N26Interface includes all possible API Calls
@@ -465,6 +488,23 @@ func (n26 *N26Credentials) Savings() (*N26Savings, error) {
 		return nil, err
 	}
 	return savings, nil
+}
+
+func (n26 *N26Credentials) Spaces() (*N26Spaces, error) {
+	spaces := &N26Spaces{}
+	resp, err := n26.callAPI("GET", "/api/spaces", nil)
+	if err != nil {
+		return nil, err
+	}
+	err = checkHTTPStatus(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(resp.Body).Decode(spaces)
+	if err != nil {
+		return nil, err
+	}
+	return spaces, nil
 }
 
 func (n26 *N26Credentials) callAPI(method, path string, v *url.Values) (*http.Response, error) {

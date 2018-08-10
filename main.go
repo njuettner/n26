@@ -34,10 +34,11 @@ var (
 	stats              = account.Command("stats", "Show N26 account statistics")
 	status             = account.Command("status", "Show N26 account status")
 	cards              = n26.Command("cards", "Show N26 cards")
-	blockCard          = n26.Command("block-card", "Block N26 Card")
+	blockCard          = n26.Command("block-card", "Block N26 card")
 	blockCardID        = blockCard.Arg("cardID", "N26 Card ID").String()
-	unblockCard        = n26.Command("unblock-card", "Unblock N26 Card")
+	unblockCard        = n26.Command("unblock-card", "Unblock N26 card")
 	unblockCardID      = unblockCard.Arg("cardID", "N26 Card ID").String()
+	spaces             = n26.Command("spaces", "Show N26 spaces")
 	config             = Config()
 	table              = tablewriter.NewWriter(os.Stdout)
 	configFilePath     = "~/.config/n26.yaml"
@@ -98,8 +99,8 @@ func main() {
 			renderErrorTable(err)
 			return
 		}
-		available := strconv.FormatFloat(balance.AvailableBalance, 'f', -1, 64)
-		usable := strconv.FormatFloat(balance.UsableBalance, 'f', -1, 64)
+		available := fmt.Sprintf("%.2f %s", balance.AvailableBalance, balance.Currency)
+		usable := fmt.Sprintf("%.2f %s", balance.UsableBalance, balance.Currency)
 		data := [][]string{[]string{available, usable}}
 		table.SetHeader([]string{"Available Balance", "Usable Balance"})
 		table.SetBorder(false)
@@ -134,7 +135,7 @@ func main() {
 		}
 		data := [][]string{}
 		for _, limit := range *limits {
-			amount := strconv.FormatFloat(limit.Amount, 'f', -1, 64)
+			amount := fmt.Sprintf("%.2f %s", limit.Amount, limit.Currency)
 			data = append(data,
 				[]string{
 					limit.Limit,
@@ -292,6 +293,27 @@ func main() {
 				})
 		}
 		table.SetHeader([]string{"ID", "Category Name"})
+		table.SetBorder(false)
+		table.AppendBulk(data)
+		table.Render()
+
+	case spaces.FullCommand():
+		spaces, err := config.Spaces()
+		if err != nil {
+			renderErrorTable(err)
+			return
+		}
+		data := [][]string{}
+		for _, space := range spaces.Spaces {
+			data = append(data,
+				[]string{
+					space.Name,
+					fmt.Sprintf("%.2f %s",
+						space.Balance.AvailableBalance,
+						space.Balance.Currency),
+				})
+		}
+		table.SetHeader([]string{"Name", "Available Balance"})
 		table.SetBorder(false)
 		table.AppendBulk(data)
 		table.Render()

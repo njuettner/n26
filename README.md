@@ -2,7 +2,7 @@
 
 Use your [N26](https://n26.com) account via command-line
 
-Latest Version: v0.4
+Latest Version: v0.5
 
 ## Features 🙌
 
@@ -13,6 +13,7 @@ Latest Version: v0.4
 - Get your **bank statements via PDF**
 - See your **N26 savings and investment**
 - See your **N26 cards**
+- See your **N26 spaces**
 - Block/Unblock your **N26 cards**
 - List all **N26 categories**
 
@@ -113,8 +114,11 @@ Commands:
     Show N26 cards
 
   block-card [<cardID>]
-    Block N26 Card
+    Block N26 card
 
   unblock-card [<cardID>]
-    Unblock N26 Card
+    Unblock N26 card
+
+  spaces
+    Show N26 spaces
 ```
