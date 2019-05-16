@@ -239,7 +239,7 @@ type N26Interface interface {
 // N26Credentials contains Email and Password to get a Token
 type N26Credentials struct {
 	Email    string `yaml:"username"`
-	Password string `yaml:"password`
+	Password string `yaml:"password"`
 }
 
 // Categories returns all available categories
